@@ -1,0 +1,73 @@
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+from sklearn.decomposition import PCA
+from sklearn.datasets import fetch_openml
+
+# Load CIFAR-10 dataset
+cifar10 = fetch_openml('CIFAR_10_small')
+
+# Convert to DataFrame for easier manipulation
+df = pd.DataFrame(data=cifar10.data)
+df['target'] = pd.Categorical(cifar10.target).codes
+
+# Split the data into features and target
+X = df.drop(co
+# Apply PCA to reduce the dimensionality
+pca = PCA(n_components=100)  # You can adjust the number of components
+X_train_pca = pca.fit_transform(X_train)
+X_test_pca = pca.transform(X_test)
+# Initialize the Random Forest Classifier
+clf = RandomForestClassifier(n_estimators=100, random_state=42)
+
+# Train the model
+clf.fit(X_train_pca, y_train)
+# Predict on the test set
+y_pred = clf.predict(X_test_pca)
+
+# Evaluate the model
+accuracy = accuracy_score(y_test, y_pred)
+print(f'Accuracy: {accuracy:.2f}')
+
+# Display the confusion matrix
+conf_matrix = confusion_matrix(y_test, y_pred)
+print('Confusion Matrix:\n', conf_matrix)
+
+# Classification report
+class_report = classification_report(y_test, y_pred)
+print('Classification Report:\n', class_report)
+from sklearn.model_selection import GridSearchCV
+
+# Define parameter grid
+param_grid = {
+    'n_estimators': [50, 100, 200],
+    'max_depth': [10, 20, 30, None],
+    'min_samples_split': [2, 5, 10]
+}
+
+# Initialize Grid Search
+grid_search = GridSearchCV(clf, param_grid, cv=5, scoring='accuracy', n_jobs=-1)
+
+# Fit Grid Search
+grid_search.fit(X_train_pca, y_train)
+
+# Best parameters
+print('Best Parameters:', grid_search.best_params_)
+
+# Evaluate the best model
+best_model = grid_search.best_estimator_
+y_pred_best = best_model.predict(X_test_pca)
+accuracy_best = accuracy_score(y_test, y_pred_best)
+print(f'Best Model Accuracy: {accuracy_best:.2f}')
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Confusion matrix heatmap
+plt.figure(figsize=(10, 7))
+sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=cifar10.target_names, yticklabels=cifar10.target_names)
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.title('Confusion Matrix')
+plt.show()
